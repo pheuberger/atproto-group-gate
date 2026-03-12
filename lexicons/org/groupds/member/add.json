@@ -1,0 +1,42 @@
+{
+  "lexicon": 1,
+  "id": "org.groupds.member.add",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Add a member to the group. Requires admin or owner role.",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["memberDid", "role"],
+          "properties": {
+            "memberDid": { "type": "string", "format": "did" },
+            "role": {
+              "type": "string",
+              "knownValues": ["member", "admin"]
+            }
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["memberDid", "role", "addedBy", "addedAt"],
+          "properties": {
+            "memberDid": { "type": "string", "format": "did" },
+            "role": { "type": "string", "knownValues": ["member", "admin"] },
+            "addedBy": { "type": "string", "format": "did" },
+            "addedAt": { "type": "string", "format": "datetime" }
+          }
+        }
+      },
+      "errors": [
+        { "name": "Unauthorized" },
+        { "name": "Forbidden" },
+        { "name": "MemberAlreadyExists" }
+      ]
+    }
+  }
+}

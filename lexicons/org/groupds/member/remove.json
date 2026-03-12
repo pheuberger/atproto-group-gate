@@ -1,0 +1,26 @@
+{
+  "lexicon": 1,
+  "id": "org.groupds.member.remove",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Remove a member from the group. Requires admin or owner role.",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["memberDid"],
+          "properties": {
+            "memberDid": { "type": "string", "format": "did" }
+          }
+        }
+      },
+      "errors": [
+        { "name": "Unauthorized" },
+        { "name": "Forbidden" },
+        { "name": "MemberNotFound" },
+        { "name": "CannotRemoveOwner" }
+      ]
+    }
+  }
+}

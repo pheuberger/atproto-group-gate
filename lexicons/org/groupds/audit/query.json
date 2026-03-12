@@ -1,0 +1,56 @@
+{
+  "lexicon": 1,
+  "id": "org.groupds.audit.query",
+  "defs": {
+    "main": {
+      "type": "query",
+      "description": "Query the audit log. Requires admin or owner role.",
+      "parameters": {
+        "type": "params",
+        "properties": {
+          "actorDid": { "type": "string", "format": "did" },
+          "targetDid": { "type": "string", "format": "did" },
+          "action": { "type": "string" },
+          "collection": { "type": "string" },
+          "since": { "type": "string", "format": "datetime" },
+          "until": { "type": "string", "format": "datetime" },
+          "limit": { "type": "integer", "minimum": 1, "maximum": 100, "default": 50 },
+          "cursor": { "type": "string" }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["entries"],
+          "properties": {
+            "cursor": { "type": "string" },
+            "entries": {
+              "type": "array",
+              "items": { "type": "ref", "ref": "#auditEntry" }
+            }
+          }
+        }
+      },
+      "errors": [
+        { "name": "Unauthorized" },
+        { "name": "Forbidden" }
+      ]
+    },
+    "auditEntry": {
+      "type": "object",
+      "required": ["id", "actorDid", "action", "result", "createdAt"],
+      "properties": {
+        "id": { "type": "string" },
+        "actorDid": { "type": "string", "format": "did" },
+        "targetDid": { "type": "string", "format": "did" },
+        "action": { "type": "string" },
+        "collection": { "type": "string" },
+        "rkey": { "type": "string" },
+        "result": { "type": "string", "knownValues": ["permitted", "denied"] },
+        "detail": { "type": "unknown" },
+        "createdAt": { "type": "string", "format": "datetime" }
+      }
+    }
+  }
+}
