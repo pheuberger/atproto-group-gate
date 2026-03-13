@@ -325,24 +325,24 @@ The `lxm` claim in the service auth JWT will be the standard NSID (e.g., `com.at
 
 **Important**: The Group Service verifies that the `repo` field in the request input matches `aud` (the group DID from the JWT). This prevents someone from using the proxy to write to a different repo.
 
-### Custom Lexicons (Namespace: `org.groupds.*`)
+### Custom Lexicons (Namespace: `app.certified.group.*`)
 
 Custom lexicons are only needed for group management operations that have no standard atproto equivalent:
 
 ```
-org.groupds.member.list         — List members and roles (if caller is a member)
-org.groupds.member.add          — Add a member (admin+)
-org.groupds.member.remove       — Remove a member (admin+)
-org.groupds.role.set            — Change a member's role (owner only)
-org.groupds.audit.query         — Query audit log (admin+)
+app.certified.group.member.list         — List members and roles (if caller is a member)
+app.certified.group.member.add          — Add a member (admin+)
+app.certified.group.member.remove       — Remove a member (admin+)
+app.certified.group.role.set            — Change a member's role (owner only)
+app.certified.group.audit.query         — Query audit log (admin+)
 ```
 
-### Lexicon: `org.groupds.member.add`
+### Lexicon: `app.certified.group.member.add`
 
 ```json
 {
   "lexicon": 1,
-  "id": "org.groupds.member.add",
+  "id": "app.certified.group.member.add",
   "defs": {
     "main": {
       "type": "procedure",
@@ -383,12 +383,12 @@ org.groupds.audit.query         — Query audit log (admin+)
 }
 ```
 
-### Lexicon: `org.groupds.member.list`
+### Lexicon: `app.certified.group.member.list`
 
 ```json
 {
   "lexicon": 1,
-  "id": "org.groupds.member.list",
+  "id": "app.certified.group.member.list",
   "defs": {
     "main": {
       "type": "query",
@@ -432,12 +432,12 @@ org.groupds.audit.query         — Query audit log (admin+)
 }
 ```
 
-### Lexicon: `org.groupds.member.remove`
+### Lexicon: `app.certified.group.member.remove`
 
 ```json
 {
   "lexicon": 1,
-  "id": "org.groupds.member.remove",
+  "id": "app.certified.group.member.remove",
   "defs": {
     "main": {
       "type": "procedure",
@@ -470,12 +470,12 @@ org.groupds.audit.query         — Query audit log (admin+)
 }
 ```
 
-### Lexicon: `org.groupds.role.set`
+### Lexicon: `app.certified.group.role.set`
 
 ```json
 {
   "lexicon": 1,
-  "id": "org.groupds.role.set",
+  "id": "app.certified.group.role.set",
   "defs": {
     "main": {
       "type": "procedure",
@@ -516,12 +516,12 @@ org.groupds.audit.query         — Query audit log (admin+)
 }
 ```
 
-### Lexicon: `org.groupds.audit.query`
+### Lexicon: `app.certified.group.audit.query`
 
 ```json
 {
   "lexicon": 1,
-  "id": "org.groupds.audit.query",
+  "id": "app.certified.group.audit.query",
   "defs": {
     "main": {
       "type": "query",
@@ -683,7 +683,7 @@ A completely different app can do the same thing. They just need to:
 1. Know the group account's DID (public information)
 2. Authenticate their user via any PDS
 3. Set `atproto-proxy: did:plc:GROUP_DID#group_service`
-4. Call standard `com.atproto.repo.*` methods for CRUD, or `org.groupds.*` for group management
+4. Call standard `com.atproto.repo.*` methods for CRUD, or `app.certified.group.*` for group management
 
 ### Blob Upload From a Client
 
@@ -749,11 +749,11 @@ const ACCEPTED_NSIDS = new Set([
   'com.atproto.repo.deleteRecord',
   'com.atproto.repo.putRecord',
   'com.atproto.repo.uploadBlob',
-  'org.groupds.member.list',
-  'org.groupds.member.add',
-  'org.groupds.member.remove',
-  'org.groupds.role.set',
-  'org.groupds.audit.query',
+  'app.certified.group.member.list',
+  'app.certified.group.member.add',
+  'app.certified.group.member.remove',
+  'app.certified.group.role.set',
+  'app.certified.group.audit.query',
 ])
 
 export class AuthVerifier {
@@ -1952,8 +1952,8 @@ export class PdsAgentPool {
 ### What the Owner Loses on Exit
 
 - RBAC layer
-- Audit log (export via `org.groupds.audit.query` before exit)
-- Membership records (export via `org.groupds.member.list` before exit)
+- Audit log (export via `app.certified.group.audit.query` before exit)
+- Membership records (export via `app.certified.group.member.list` before exit)
 
 ---
 
@@ -1963,7 +1963,7 @@ Your web app is just one client of the Group Service.
 
 **Recommendation: Option A — Group Service is the source of truth for membership.**
 
-Your web app calls `org.groupds.member.add` / `org.groupds.member.remove` via `atproto-proxy` when admins manage membership. If your web app uses Better Auth for its own user accounts, that's fine — but group membership canonical state lives in the Group Service's per-group SQLite. Any other app can query and manage membership via the same `org.groupds.*` lexicons.
+Your web app calls `app.certified.group.member.add` / `app.certified.group.member.remove` via `atproto-proxy` when admins manage membership. If your web app uses Better Auth for its own user accounts, that's fine — but group membership canonical state lives in the Group Service's per-group SQLite. Any other app can query and manage membership via the same `app.certified.group.*` lexicons.
 
 ---
 
@@ -1995,7 +1995,7 @@ Steps are grouped into **MVP** (required for a working system) and **Post-MVP** 
 1. **Scaffold** — Project setup, TypeScript config, Dockerfile, railway.toml
 2. **Database** — Kysely + SQLite setup (global.sqlite + per-group SQLite), migrations, schema types, `GroupDbPool`
 3. **Credentials** — AES-256-GCM app password encryption, PDS agent pool. *Dependency: required by all handlers that write to the group's PDS.*
-4. **Auth** — Service JWT verifier (copy Ozone pattern), nonce cache. Must accept standard `com.atproto.repo.*` NSIDs and custom `org.groupds.*` NSIDs.
+4. **Auth** — Service JWT verifier (copy Ozone pattern), nonce cache. Must accept standard `com.atproto.repo.*` NSIDs and custom `app.certified.group.*` NSIDs.
 5. **RBAC** — Permission matrix, membership queries (via per-group SQLite), authorship tracking
 6. **Error middleware** — XRPC error handler, `xrpcHandler` wrapper. *Dependency: all handlers use the wrapper and error middleware.*
 7. **Core API** — `com.atproto.repo.createRecord`, `deleteRecord`, `putRecord` handlers (intercept standard NSIDs, validate `repo` matches `aud`, use agent pool from step 3)
@@ -2033,7 +2033,7 @@ await groupClient.com.atproto.repo.createRecord({
 })
 
 // Group management uses custom lexicons via .call()
-await groupClient.call('org.groupds.member.add', {}, {
+await groupClient.call('app.certified.group.member.add', {}, {
   memberDid: 'did:plc:newmember',
   role: 'member',
 })

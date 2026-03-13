@@ -9,7 +9,7 @@ function parseDetail(s: string | null | undefined): unknown {
 }
 
 export default function (app: Express, ctx: AppContext) {
-  app.get('/xrpc/org.groupds.audit.query', xrpcHandler(ctx, async (req, res, { callerDid, groupDid }) => {
+  app.get('/xrpc/app.certified.group.audit.query', xrpcHandler(ctx, async (req, res, { callerDid, groupDid }) => {
     const groupDb = ctx.groupDbs.get(groupDid)
 
     // RBAC: admin+ can query audit log

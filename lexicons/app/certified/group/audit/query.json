@@ -1,6 +1,6 @@
 {
   "lexicon": 1,
-  "id": "org.groupds.audit.query",
+  "id": "app.certified.group.audit.query",
   "defs": {
     "main": {
       "type": "query",

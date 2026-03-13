@@ -7,7 +7,7 @@ import { buildTestServer, seedMember } from './helpers/mock-server.js'
 import roleSetHandler from '../src/api/role/set.js'
 
 async function roleSet(url: string, memberDid: string, role: string) {
-  const res = await fetch(`${url}/xrpc/org.groupds.role.set`, {
+  const res = await fetch(`${url}/xrpc/app.certified.group.role.set`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test' },
     body: JSON.stringify({ memberDid, role }),

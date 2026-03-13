@@ -10,11 +10,11 @@ const ACCEPTED_NSIDS = new Set([
   'com.atproto.repo.deleteRecord',
   'com.atproto.repo.putRecord',
   'com.atproto.repo.uploadBlob',
-  'org.groupds.member.list',
-  'org.groupds.member.add',
-  'org.groupds.member.remove',
-  'org.groupds.role.set',
-  'org.groupds.audit.query',
+  'app.certified.group.member.list',
+  'app.certified.group.member.add',
+  'app.certified.group.member.remove',
+  'app.certified.group.role.set',
+  'app.certified.group.audit.query',
 ])
 
 export class AuthVerifier {

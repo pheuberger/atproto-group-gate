@@ -1,10 +1,10 @@
 {
   "lexicon": 1,
-  "id": "org.groupds.member.add",
+  "id": "app.certified.group.role.set",
   "defs": {
     "main": {
       "type": "procedure",
-      "description": "Add a member to the group. Requires admin or owner role.",
+      "description": "Change a member's role. Owner only.",
       "input": {
         "encoding": "application/json",
         "schema": {
@@ -14,7 +14,7 @@
             "memberDid": { "type": "string", "format": "did" },
             "role": {
               "type": "string",
-              "knownValues": ["member", "admin"]
+              "knownValues": ["member", "admin", "owner"]
             }
           }
         }
@@ -23,19 +23,19 @@
         "encoding": "application/json",
         "schema": {
           "type": "object",
-          "required": ["memberDid", "role", "addedBy", "addedAt"],
+          "required": ["memberDid", "role", "updatedAt"],
           "properties": {
             "memberDid": { "type": "string", "format": "did" },
-            "role": { "type": "string", "knownValues": ["member", "admin"] },
-            "addedBy": { "type": "string", "format": "did" },
-            "addedAt": { "type": "string", "format": "datetime" }
+            "role": { "type": "string", "knownValues": ["member", "admin", "owner"] },
+            "updatedAt": { "type": "string", "format": "datetime" }
           }
         }
       },
       "errors": [
         { "name": "Unauthorized" },
         { "name": "Forbidden" },
-        { "name": "MemberAlreadyExists" }
+        { "name": "MemberNotFound" },
+        { "name": "LastOwnerDemotion", "description": "Cannot demote the last owner — promote a replacement first" }
       ]
     }
   }

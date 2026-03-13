@@ -1,6 +1,6 @@
 {
   "lexicon": 1,
-  "id": "org.groupds.member.remove",
+  "id": "app.certified.group.member.remove",
   "defs": {
     "main": {
       "type": "procedure",

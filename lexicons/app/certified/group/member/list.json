@@ -1,6 +1,6 @@
 {
   "lexicon": 1,
-  "id": "org.groupds.member.list",
+  "id": "app.certified.group.member.list",
   "defs": {
     "main": {
       "type": "query",
