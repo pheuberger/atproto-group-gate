@@ -67,6 +67,17 @@ describe('member.add', () => {
     expect(res.body.error).toBe('MemberAlreadyExists')
   })
 
+  it('concurrent duplicate requests both return 200 or 409, never 500', async () => {
+    const [res1, res2] = await Promise.all([
+      request(app).post('/xrpc/app.certified.group.member.add').send({ memberDid: 'did:plc:concurrent', role: 'member' }),
+      request(app).post('/xrpc/app.certified.group.member.add').send({ memberDid: 'did:plc:concurrent', role: 'member' }),
+    ])
+    expect([200, 409]).toContain(res1.status)
+    expect([200, 409]).toContain(res2.status)
+    expect(res1.status).not.toBe(500)
+    expect(res2.status).not.toBe(500)
+  })
+
   it('role owner returns 400 InvalidRole', async () => {
     const res = await request(app)
       .post('/xrpc/app.certified.group.member.add')

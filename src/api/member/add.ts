@@ -37,11 +37,20 @@ export default function (app: Express, ctx: AppContext) {
       throw new ForbiddenError('Cannot assign a role equal to or higher than your own')
     }
 
-    const member = await groupDb
-      .insertInto('group_members')
-      .values({ member_did: memberDid, role, added_by: callerDid })
-      .returning(['member_did', 'role', 'added_at'])
-      .executeTakeFirstOrThrow()
+    let member
+    try {
+      member = await groupDb
+        .insertInto('group_members')
+        .values({ member_did: memberDid, role, added_by: callerDid })
+        .returning(['member_did', 'role', 'added_at'])
+        .executeTakeFirstOrThrow()
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      if (msg.includes('UNIQUE constraint failed: group_members.member_did')) {
+        throw new XRPCError(409, 'Member already exists', 'MemberAlreadyExists')
+      }
+      throw err
+    }
 
     await ctx.audit.log(groupDb, callerDid, 'member.add', 'permitted', { memberDid, role })
 
