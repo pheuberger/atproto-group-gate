@@ -12,7 +12,7 @@ export default function (app: Express, ctx: AppContext) {
     try {
       await ctx.rbac.assertCan(groupDb, callerDid, operation)
     } catch (err) {
-      await ctx.audit.logAuditEvent(groupDb, callerDid, operation, 'denied')
+      await ctx.audit.log(groupDb, callerDid, operation, 'denied')
       throw err
     }
 
@@ -41,7 +41,7 @@ export default function (app: Express, ctx: AppContext) {
       agent.com.atproto.repo.uploadBlob(blobData, { encoding: contentType }),
     )
 
-    await ctx.audit.logAuditEvent(groupDb, callerDid, operation, 'permitted')
+    await ctx.audit.log(groupDb, callerDid, operation, 'permitted')
 
     res.json(response.data)
   }))

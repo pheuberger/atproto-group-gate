@@ -14,7 +14,7 @@ import { runGlobalMigrations } from './db/migrate.js'
 import { openSqliteDb } from './db/sqlite.js'
 import { GroupDbPool } from './db/group-db-pool.js'
 import { PdsAgentPool } from './pds/agent.js'
-import { logAuditEvent } from './audit.js'
+import { AuditLogger } from './audit.js'
 import type { AppContext } from './context.js'
 import type { GlobalDatabase } from './db/schema.js'
 
@@ -75,7 +75,7 @@ async function main() {
 
   // XRPC routes
   const pdsAgents = new PdsAgentPool(globalDb, Buffer.from(config.encryptionKey, 'hex'))
-  const audit = { logAuditEvent }
+  const audit = new AuditLogger()
   const ctx: AppContext = {
     config, globalDb, groupDbs, authVerifier, rbac, pdsAgents, audit, logger,
   }

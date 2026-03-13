@@ -4,7 +4,7 @@ import type { Express } from 'express'
 import type { AppContext } from '../../src/context.js'
 import type { Config } from '../../src/config.js'
 import { assertCan, isAuthor } from '../../src/rbac/check.js'
-import { logAuditEvent } from '../../src/audit.js'
+import { AuditLogger } from '../../src/audit.js'
 import { xrpcErrorHandler } from '../../src/api/error-handler.js'
 import { createTestGlobalDb, createTestGroupDb } from './test-db.js'
 import type { Kysely } from 'kysely'
@@ -72,7 +72,7 @@ export async function createTestContext(overrides?: Partial<AppContext>): Promis
     authVerifier: mockAuthVerifier as any,
     rbac: { assertCan, isAuthor },
     pdsAgents: mockPdsAgents as any,
-    audit: { logAuditEvent },
+    audit: new AuditLogger(),
     logger: { info: () => {}, error: () => {}, warn: () => {}, debug: () => {} } as any,
     ...overrides,
   }

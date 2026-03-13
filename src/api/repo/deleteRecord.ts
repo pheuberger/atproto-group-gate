@@ -20,7 +20,7 @@ export default function (app: Express, ctx: AppContext) {
     try {
       await ctx.rbac.assertCan(groupDb, callerDid, operation)
     } catch (err) {
-      await ctx.audit.logAuditEvent(groupDb, callerDid, operation, 'denied', {
+      await ctx.audit.log(groupDb, callerDid, operation, 'denied', {
         collection: input.collection, rkey: input.rkey, reason: (err as Error).message,
       })
       throw err
@@ -34,7 +34,7 @@ export default function (app: Express, ctx: AppContext) {
       groupDb.deleteFrom('group_record_authors')
         .where('record_uri', '=', recordUri)
         .execute(),
-      ctx.audit.logAuditEvent(groupDb, callerDid, operation, 'permitted', {
+      ctx.audit.log(groupDb, callerDid, operation, 'permitted', {
         collection: input.collection, rkey: input.rkey,
       }),
     ])

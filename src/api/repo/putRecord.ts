@@ -31,7 +31,7 @@ export default function (app: Express, ctx: AppContext) {
       if (authorRow) {
         if (authorRow.author_did !== callerDid) {
           const reason = 'Can only update records you created'
-          await ctx.audit.logAuditEvent(groupDb, callerDid, 'putOwnRecord', 'denied', {
+          await ctx.audit.log(groupDb, callerDid, 'putOwnRecord', 'denied', {
             collection: input.collection, rkey: input.rkey, reason,
           })
           throw new ForbiddenError(reason)
@@ -46,7 +46,7 @@ export default function (app: Express, ctx: AppContext) {
     try {
       await ctx.rbac.assertCan(groupDb, callerDid, operation)
     } catch (err) {
-      await ctx.audit.logAuditEvent(groupDb, callerDid, operation, 'denied', {
+      await ctx.audit.log(groupDb, callerDid, operation, 'denied', {
         collection: input.collection, rkey: input.rkey, reason: (err as Error).message,
       })
       throw err
@@ -57,21 +57,22 @@ export default function (app: Express, ctx: AppContext) {
       agent.com.atproto.repo.putRecord(input),
     )
 
-    // Upsert authorship (for new records via putRecord, skip profiles)
-    if (!isProfileUpdate) {
-      await groupDb.insertInto('group_record_authors')
-        .values({
-          record_uri: response.data.uri,
-          author_did: callerDid,
-          collection: input.collection,
-        })
-        .onConflict((oc) => oc.column('record_uri').doNothing())
-        .execute()
-    }
-
-    await ctx.audit.logAuditEvent(groupDb, callerDid, operation, 'permitted', {
-      collection: input.collection, rkey: input.rkey,
-    })
+    await Promise.all([
+      // Upsert authorship (for new records via putRecord, skip profiles)
+      !isProfileUpdate
+        ? groupDb.insertInto('group_record_authors')
+            .values({
+              record_uri: response.data.uri,
+              author_did: callerDid,
+              collection: input.collection,
+            })
+            .onConflict((oc) => oc.column('record_uri').doNothing())
+            .execute()
+        : Promise.resolve(),
+      ctx.audit.log(groupDb, callerDid, operation, 'permitted', {
+        collection: input.collection, rkey: input.rkey,
+      }),
+    ])
 
     res.json(response.data)
   }))

@@ -39,11 +39,12 @@ export default function (app: Express, ctx: AppContext) {
       throw new ForbiddenError('Cannot remove a member with equal or higher role')
     }
 
-    await groupDb.deleteFrom('group_members')
-      .where('member_did', '=', memberDid)
-      .execute()
-
-    await ctx.audit.logAuditEvent(groupDb, callerDid, 'member.remove', 'permitted', { memberDid })
+    await Promise.all([
+      groupDb.deleteFrom('group_members')
+        .where('member_did', '=', memberDid)
+        .execute(),
+      ctx.audit.log(groupDb, callerDid, 'member.remove', 'permitted', { memberDid }),
+    ])
 
     res.json({})
   }))

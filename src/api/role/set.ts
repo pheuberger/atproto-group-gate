@@ -54,7 +54,7 @@ export default function (app: Express, ctx: AppContext) {
         .execute()
     })
 
-    await ctx.audit.logAuditEvent(groupDb, callerDid, 'role.set', 'permitted', {
+    await ctx.audit.log(groupDb, callerDid, 'role.set', 'permitted', {
       memberDid, previousRole: target.role, newRole,
     })
 
