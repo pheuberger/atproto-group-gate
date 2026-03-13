@@ -19,6 +19,8 @@ export const ROLE_HIERARCHY: Record<Role, number> = {
   owner: 2,
 }
 
+export const ASSIGNABLE_ROLES: Role[] = ['member', 'admin']
+
 const MIN_ROLE_FOR_OPERATION: Record<Operation, Role> = {
   createRecord: 'member',
   uploadBlob: 'member',

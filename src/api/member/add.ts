@@ -4,7 +4,7 @@ import { ensureValidDid } from '@atproto/syntax'
 import type { AppContext } from '../../context.js'
 import { xrpcHandler } from '../util.js'
 import { ForbiddenError } from '../../errors.js'
-import { ROLE_HIERARCHY, type Role } from '../../rbac/permissions.js'
+import { ASSIGNABLE_ROLES, ROLE_HIERARCHY, type Role } from '../../rbac/permissions.js'
 
 export default function (app: Express, ctx: AppContext) {
   app.post('/xrpc/app.certified.group.member.add', xrpcHandler(ctx, async (req, res, { callerDid, groupDid }) => {
@@ -12,8 +12,8 @@ export default function (app: Express, ctx: AppContext) {
 
     // Validate inputs before any async work
     ensureValidDid(memberDid)
-    if (!(role in ROLE_HIERARCHY)) {
-      throw new XRPCError(400, `Role must be one of: ${Object.keys(ROLE_HIERARCHY).join(', ')}`, 'InvalidRole')
+    if (!ASSIGNABLE_ROLES.includes(role)) {
+      throw new XRPCError(400, `Role must be one of: ${ASSIGNABLE_ROLES.join(', ')}`, 'InvalidRole')
     }
 
     const groupDb = ctx.groupDbs.get(groupDid)

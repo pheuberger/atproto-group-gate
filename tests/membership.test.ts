@@ -67,6 +67,14 @@ describe('member.add', () => {
     expect(res.body.error).toBe('MemberAlreadyExists')
   })
 
+  it('role owner returns 400 InvalidRole', async () => {
+    const res = await request(app)
+      .post('/xrpc/app.certified.group.member.add')
+      .send({ memberDid: 'did:plc:newuser', role: 'owner' })
+    expect(res.status).toBe(400)
+    expect(res.body.error).toBe('InvalidRole')
+  })
+
   it('member cannot add anyone (RBAC 403)', async () => {
     await seedMember(groupDb, 'did:plc:member1', 'member')
     app = createApp({ ...ctx, authVerifier: { verify: async () => ({ iss: 'did:plc:member1', aud: 'did:plc:testgroup' }) } as any })
