@@ -1,0 +1,495 @@
+# API Reference
+
+All endpoints (except `/health`) require authentication via a signed JWT in the `Authorization: Bearer <token>` header. The JWT must include:
+
+- `iss` — the caller's DID
+- `aud` — the target group's DID
+- `lxm` — the XRPC method being called
+- `jti` — a unique nonce (each token can only be used once)
+- `exp` — expiration timestamp
+
+## Health check
+
+### `GET /health`
+
+Returns service health status. No authentication required.
+
+**Response:**
+
+```
+200 OK
+```
+
+```json
+{ "status": "ok" }
+```
+
+---
+
+## Record operations
+
+These endpoints proxy requests to the group's backing PDS after authentication and authorization.
+
+### `POST /xrpc/com.atproto.repo.createRecord`
+
+Create a new record in the group's repository.
+
+**Required role:** member
+
+**Request body:**
+
+```json
+{
+  "repo": "did:plc:group123",
+  "collection": "app.bsky.feed.post",
+  "rkey": "optional-record-key",
+  "record": {
+    "$type": "app.bsky.feed.post",
+    "text": "Hello from the group!",
+    "createdAt": "2026-01-15T12:00:00Z"
+  }
+}
+```
+
+**Response (200):**
+
+```json
+{
+  "uri": "at://did:plc:group123/app.bsky.feed.post/3abc123",
+  "cid": "bafyrei..."
+}
+```
+
+**Errors:**
+
+| Code | Name | Description |
+|------|------|-------------|
+| 400 | InvalidRequest | `repo` does not match the group DID |
+| 401 | AuthenticationRequired | Missing or invalid JWT |
+| 403 | Forbidden | Caller lacks member role |
+
+**Example:**
+
+```bash
+curl -X POST https://group-service.example.com/xrpc/com.atproto.repo.createRecord \
+  -H "Authorization: Bearer $JWT" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "repo": "did:plc:group123",
+    "collection": "app.bsky.feed.post",
+    "record": {
+      "$type": "app.bsky.feed.post",
+      "text": "Hello from the group!",
+      "createdAt": "2026-01-15T12:00:00Z"
+    }
+  }'
+```
+
+---
+
+### `POST /xrpc/com.atproto.repo.putRecord`
+
+Update an existing record or create one at a specific key.
+
+**Required role:** Depends on context:
+
+| Scenario | Operation | Required role |
+|----------|-----------|---------------|
+| Updating `app.bsky.actor.profile` with rkey `self` | `putRecord:profile` | admin |
+| Updating a record you authored | `putOwnRecord` | member |
+| Creating a new record (no existing author) | `createRecord` | member |
+
+**Request body:**
+
+```json
+{
+  "repo": "did:plc:group123",
+  "collection": "app.bsky.feed.post",
+  "rkey": "3abc123",
+  "record": {
+    "$type": "app.bsky.feed.post",
+    "text": "Updated post content",
+    "createdAt": "2026-01-15T12:00:00Z"
+  }
+}
+```
+
+**Response (200):**
+
+```json
+{
+  "uri": "at://did:plc:group123/app.bsky.feed.post/3abc123",
+  "cid": "bafyrei..."
+}
+```
+
+**Errors:**
+
+| Code | Name | Description |
+|------|------|-------------|
+| 400 | InvalidRequest | `repo` does not match the group DID |
+| 401 | AuthenticationRequired | Missing or invalid JWT |
+| 403 | Forbidden | Caller lacks required role for this operation |
+
+**Example:**
+
+```bash
+curl -X POST https://group-service.example.com/xrpc/com.atproto.repo.putRecord \
+  -H "Authorization: Bearer $JWT" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "repo": "did:plc:group123",
+    "collection": "app.bsky.actor.profile",
+    "rkey": "self",
+    "record": {
+      "$type": "app.bsky.actor.profile",
+      "displayName": "Our Group",
+      "description": "A collaborative group account"
+    }
+  }'
+```
+
+---
+
+### `POST /xrpc/com.atproto.repo.deleteRecord`
+
+Delete a record from the group's repository.
+
+**Required role:**
+
+| Scenario | Operation | Required role |
+|----------|-----------|---------------|
+| Deleting a record you authored | `deleteOwnRecord` | member |
+| Deleting another member's record | `deleteAnyRecord` | admin |
+
+**Request body:**
+
+```json
+{
+  "repo": "did:plc:group123",
+  "collection": "app.bsky.feed.post",
+  "rkey": "3abc123"
+}
+```
+
+**Response (200):**
+
+```json
+{}
+```
+
+**Errors:**
+
+| Code | Name | Description |
+|------|------|-------------|
+| 400 | InvalidRequest | `repo` does not match the group DID |
+| 401 | AuthenticationRequired | Missing or invalid JWT |
+| 403 | Forbidden | Caller lacks required role |
+
+**Example:**
+
+```bash
+curl -X POST https://group-service.example.com/xrpc/com.atproto.repo.deleteRecord \
+  -H "Authorization: Bearer $JWT" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "repo": "did:plc:group123",
+    "collection": "app.bsky.feed.post",
+    "rkey": "3abc123"
+  }'
+```
+
+---
+
+### `POST /xrpc/com.atproto.repo.uploadBlob`
+
+Upload a blob (image, file, etc.) to the group's PDS.
+
+**Required role:** member
+
+**Request:**
+
+- Send the raw binary data as the request body
+- `Content-Type` header must match the blob's MIME type
+- `Content-Length` header is required
+
+**Response (200):**
+
+```json
+{
+  "blob": {
+    "$type": "blob",
+    "ref": { "$link": "bafyrei..." },
+    "mimeType": "image/png",
+    "size": 123456
+  }
+}
+```
+
+**Errors:**
+
+| Code | Name | Description |
+|------|------|-------------|
+| 400 | BlobTooLarge | Blob exceeds `MAX_BLOB_SIZE` (default 5 MB) |
+| 401 | AuthenticationRequired | Missing or invalid JWT |
+| 403 | Forbidden | Caller lacks member role |
+
+**Example:**
+
+```bash
+curl -X POST https://group-service.example.com/xrpc/com.atproto.repo.uploadBlob \
+  -H "Authorization: Bearer $JWT" \
+  -H "Content-Type: image/png" \
+  --data-binary @photo.png
+```
+
+---
+
+## Member management
+
+### `POST /xrpc/app.certified.group.member.add`
+
+Add a new member to the group.
+
+**Required role:** admin
+
+**Request body:**
+
+```json
+{
+  "memberDid": "did:plc:newmember",
+  "role": "member"
+}
+```
+
+The `role` field must be `"member"` or `"admin"`. Owners cannot be added via this endpoint — use `role.set` to promote an existing member to owner.
+
+**Response (200):**
+
+```json
+{
+  "memberDid": "did:plc:newmember",
+  "role": "member",
+  "addedAt": "2026-01-15T12:00:00Z"
+}
+```
+
+**Errors:**
+
+| Code | Name | Description |
+|------|------|-------------|
+| 400 | InvalidRole | Role is not `member` or `admin` |
+| 401 | AuthenticationRequired | Missing or invalid JWT |
+| 403 | Forbidden | Caller lacks admin role |
+| 409 | MemberAlreadyExists | The DID is already a member |
+
+**Example:**
+
+```bash
+curl -X POST https://group-service.example.com/xrpc/app.certified.group.member.add \
+  -H "Authorization: Bearer $JWT" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "memberDid": "did:plc:newmember",
+    "role": "member"
+  }'
+```
+
+---
+
+### `POST /xrpc/app.certified.group.member.remove`
+
+Remove a member from the group.
+
+**Required role:** admin (or any role for self-removal)
+
+**Request body:**
+
+```json
+{
+  "memberDid": "did:plc:targetmember"
+}
+```
+
+**Response (200):**
+
+```json
+{}
+```
+
+**Errors:**
+
+| Code | Name | Description |
+|------|------|-------------|
+| 400 | CannotRemoveOwner | Cannot remove a member with the owner role |
+| 400 | CannotRemoveHigherRole | Target has equal or higher role than caller |
+| 401 | AuthenticationRequired | Missing or invalid JWT |
+| 403 | Forbidden | Caller lacks admin role (and is not removing self) |
+| 404 | MemberNotFound | Target is not a group member |
+
+**Example:**
+
+```bash
+curl -X POST https://group-service.example.com/xrpc/app.certified.group.member.remove \
+  -H "Authorization: Bearer $JWT" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "memberDid": "did:plc:targetmember"
+  }'
+```
+
+---
+
+### `GET /xrpc/app.certified.group.member.list`
+
+List group members with pagination.
+
+**Required role:** member
+
+**Query parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `limit` | number | 50 | Results per page (1-100) |
+| `cursor` | string | — | Pagination cursor from a previous response |
+
+**Response (200):**
+
+```json
+{
+  "members": [
+    {
+      "did": "did:plc:owner1",
+      "role": "owner",
+      "addedBy": "did:plc:owner1",
+      "addedAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "did": "did:plc:admin1",
+      "role": "admin",
+      "addedBy": "did:plc:owner1",
+      "addedAt": "2026-01-02T00:00:00Z"
+    }
+  ],
+  "cursor": "MjAyNi0wMS0wMlQwMDowMDowMFo6OmRpZDpwbGM6YWRtaW4x"
+}
+```
+
+Members are ordered by `added_at ASC, member_did ASC`. The cursor is a base64-encoded string of `added_at::member_did`.
+
+**Example:**
+
+```bash
+curl "https://group-service.example.com/xrpc/app.certified.group.member.list?limit=10" \
+  -H "Authorization: Bearer $JWT"
+```
+
+---
+
+### `POST /xrpc/app.certified.group.role.set`
+
+Change a member's role.
+
+**Required role:** owner
+
+**Request body:**
+
+```json
+{
+  "memberDid": "did:plc:targetmember",
+  "role": "admin"
+}
+```
+
+The `role` field can be `"member"`, `"admin"`, or `"owner"`.
+
+**Response (200):**
+
+```json
+{
+  "memberDid": "did:plc:targetmember",
+  "role": "admin"
+}
+```
+
+**Errors:**
+
+| Code | Name | Description |
+|------|------|-------------|
+| 400 | LastOwner | Cannot demote the last owner |
+| 401 | AuthenticationRequired | Missing or invalid JWT |
+| 403 | Forbidden | Caller lacks owner role |
+| 404 | MemberNotFound | Target is not a group member |
+
+**Example:**
+
+```bash
+curl -X POST https://group-service.example.com/xrpc/app.certified.group.role.set \
+  -H "Authorization: Bearer $JWT" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "memberDid": "did:plc:targetmember",
+    "role": "admin"
+  }'
+```
+
+---
+
+## Audit log
+
+### `GET /xrpc/app.certified.group.audit.query`
+
+Query the group's audit log.
+
+**Required role:** admin
+
+**Query parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `limit` | number | 50 | Results per page (1-100) |
+| `cursor` | string | — | Pagination cursor from a previous response |
+| `actorDid` | string | — | Filter by actor DID |
+| `action` | string | — | Filter by action (e.g. `createRecord`, `member.add`) |
+| `collection` | string | — | Filter by collection NSID |
+
+**Response (200):**
+
+```json
+{
+  "entries": [
+    {
+      "id": 42,
+      "actorDid": "did:plc:member1",
+      "action": "createRecord",
+      "collection": "app.bsky.feed.post",
+      "rkey": "3abc123",
+      "result": "permitted",
+      "detail": {
+        "collection": "app.bsky.feed.post",
+        "rkey": "3abc123"
+      },
+      "createdAt": "2026-01-15T12:00:00Z"
+    }
+  ],
+  "cursor": "NDI="
+}
+```
+
+Entries are ordered newest first (`id DESC`). The `detail` field is a JSON object parsed from the stored JSON string.
+
+**Example:**
+
+```bash
+# All audit entries
+curl "https://group-service.example.com/xrpc/app.certified.group.audit.query" \
+  -H "Authorization: Bearer $JWT"
+
+# Filter by actor
+curl "https://group-service.example.com/xrpc/app.certified.group.audit.query?actorDid=did:plc:member1" \
+  -H "Authorization: Bearer $JWT"
+
+# Filter by action
+curl "https://group-service.example.com/xrpc/app.certified.group.audit.query?action=member.add" \
+  -H "Authorization: Bearer $JWT"
+```

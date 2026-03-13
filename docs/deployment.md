@@ -1,0 +1,88 @@
+# Deployment
+
+## General requirements
+
+CGS requires:
+
+- **Node.js 22+** runtime
+- **Persistent storage** for SQLite databases (the `DATA_DIR` directory)
+- **Two required environment variables**: `ENCRYPTION_KEY` and `PUBLIC_HOSTNAME`
+
+The service exposes a health check at `GET /health` that returns `{"status":"ok"}`.
+
+## Docker
+
+The included Dockerfile creates a minimal production image using a multi-stage build with `node:22-slim`.
+
+```bash
+docker build -t group-service .
+docker run -p 3000:3000 \
+  -e PUBLIC_HOSTNAME=group-service.example.com \
+  -e ENCRYPTION_KEY=$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))") \
+  -v $(pwd)/data:/app/data \
+  group-service
+```
+
+The container expects a volume mounted at `/app/data` for database persistence.
+
+## Deploying to Railway
+
+CGS is pre-configured for [Railway](https://railway.app/) via `railway.toml`.
+
+### Step-by-step
+
+1. **Create a new project** from your GitHub repository in the Railway dashboard
+
+2. **Configure environment variables** in the service settings:
+
+   | Variable | Value |
+   |----------|-------|
+   | `PUBLIC_HOSTNAME` | Your Railway domain (e.g. `your-app.up.railway.app`) |
+   | `ENCRYPTION_KEY` | Generate with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
+   | `PORT` | `${{PORT}}` (Railway provides this automatically) |
+   | `DATA_DIR` | `/app/data` |
+
+   All other variables have sensible defaults (see the [environment variables table](../README.md#environment-variables)).
+
+3. **Add a persistent volume** — this is critical:
+   - Go to your service's **Settings > Volumes**
+   - Mount path: `/app/data`
+   - Without a volume, all SQLite databases are lost on every redeploy
+
+4. **Deploy** — Railway auto-detects the Dockerfile, builds, and deploys
+
+5. **Verify** — hit `https://your-app.up.railway.app/health` and confirm `{"status":"ok"}`
+
+### Railway configuration
+
+The `railway.toml` is already set up:
+
+```toml
+[build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 10
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+```
+
+### SQLite on Railway
+
+CGS uses SQLite with WAL (Write-Ahead Logging) mode, which works well with a single replica:
+
+- **Single replica is required** — SQLite is a single-writer database. Do not scale to multiple replicas, as concurrent writes from different processes will cause database lock errors.
+- **Volume is required** — without a persistent volume, databases are lost on redeploy since Railway containers are ephemeral.
+- **Backup strategy** — consider periodic copies of the `/app/data` directory. SQLite databases in WAL mode can be safely copied while the service is running using `sqlite3 <db> ".backup <dest>"`.
+
+## Other platforms
+
+CGS runs anywhere you can run a Docker container with persistent storage. Key considerations:
+
+- Mount a persistent volume at whatever path you set for `DATA_DIR`
+- Expose port `3000` (or whatever `PORT` is set to)
+- Set `PUBLIC_HOSTNAME` to the domain clients will use to reach the service
+- Use the `/health` endpoint for health checks
+- Run a single replica only (SQLite constraint)
