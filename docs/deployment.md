@@ -39,13 +39,12 @@ CGS is pre-configured for [Railway](https://railway.app/) via `railway.toml`.
    |----------|-------|
    | `PUBLIC_HOSTNAME` | Your Railway domain (e.g. `your-app.up.railway.app`) |
    | `ENCRYPTION_KEY` | Generate with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
-   | `PORT` | `${{PORT}}` (Railway provides this automatically) |
    | `DATA_DIR` | `/app/data` |
 
-   All other variables have sensible defaults (see the [environment variables table](../README.md#environment-variables)).
+   `PORT` is injected automatically by Railway — do not set it manually. All other variables have sensible defaults (see the [environment variables table](../README.md#environment-variables)).
 
 3. **Add a persistent volume** — this is critical:
-   - Go to your service's **Settings > Volumes**
+   - Right-click your service (or click **+**) → **Add Volume**
    - Mount path: `/app/data`
    - Without a volume, all SQLite databases are lost on every redeploy
 
