@@ -7,7 +7,7 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     .addColumn('pds_url', 'text', (col) => col.notNull())
     .addColumn('encrypted_app_password', 'text', (col) => col.notNull())
     .addColumn('created_at', 'text', (col) =>
-      col.defaultTo(sql`datetime('now')`).notNull(),
+      col.defaultTo(sql`(datetime('now'))`).notNull(),
     )
     .execute()
 

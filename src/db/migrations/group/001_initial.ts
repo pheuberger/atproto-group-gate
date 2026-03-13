@@ -7,7 +7,7 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     .addColumn('role', 'text', (col) => col.notNull())
     .addColumn('added_by', 'text', (col) => col.notNull())
     .addColumn('added_at', 'text', (col) =>
-      col.defaultTo(sql`datetime('now')`).notNull(),
+      col.defaultTo(sql`(datetime('now'))`).notNull(),
     )
     .execute()
 
@@ -17,7 +17,7 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     .addColumn('author_did', 'text', (col) => col.notNull())
     .addColumn('collection', 'text', (col) => col.notNull())
     .addColumn('created_at', 'text', (col) =>
-      col.defaultTo(sql`datetime('now')`).notNull(),
+      col.defaultTo(sql`(datetime('now'))`).notNull(),
     )
     .execute()
 
@@ -38,7 +38,7 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     .addColumn('detail', 'text')
     .addColumn('jti', 'text')
     .addColumn('created_at', 'text', (col) =>
-      col.defaultTo(sql`datetime('now')`).notNull(),
+      col.defaultTo(sql`(datetime('now'))`).notNull(),
     )
     .execute()
 
