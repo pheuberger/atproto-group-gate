@@ -1,5 +1,5 @@
 import { Agent, AtpAgent } from '@atproto/api'
-import { XRPCError } from '@atproto/xrpc-server'
+import { XRPCError, ResponseType } from '@atproto/xrpc'
 import { decrypt } from './credentials.js'
 import type { Kysely } from 'kysely'
 import type { GlobalDatabase } from '../db/schema.js'
@@ -61,7 +61,7 @@ export class PdsAgentPool {
     try {
       return await fn(agent)
     } catch (err: unknown) {
-      if (err instanceof XRPCError && (err.statusCode === 401 || err.error === EXPIRED_TOKEN_ERROR)) {
+      if (err instanceof XRPCError && (err.status === ResponseType.AuthenticationRequired || err.error === EXPIRED_TOKEN_ERROR)) {
         this.invalidate(groupDid)
         const freshAgent = await this.get(groupDid)
         return await fn(freshAgent)

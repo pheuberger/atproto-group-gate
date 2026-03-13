@@ -26,6 +26,9 @@ importers:
       '@atproto/syntax':
         specifier: ^0.5.0
         version: 0.5.0
+      '@atproto/xrpc':
+        specifier: 0.7.7
+        version: 0.7.7
       '@atproto/xrpc-server':
         specifier: ^0.10.15
         version: 0.10.15
