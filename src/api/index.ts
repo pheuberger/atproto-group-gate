@@ -9,10 +9,12 @@ import auditQuery from './audit/query.js'
 import memberList from './member/list.js'
 import memberAdd from './member/add.js'
 import deleteRecord from './repo/deleteRecord.js'
+import groupRegister from './group/register.js'
 
 export function registerRoutes(app: Express, ctx: AppContext): void {
   // Each handler bead appends its import + registration call here.
   // This file starts empty and grows as handler beads are implemented.
+  groupRegister(app, ctx)
   roleSet(app, ctx)
   memberRemove(app, ctx)
   memberList(app, ctx)

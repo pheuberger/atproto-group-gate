@@ -1,0 +1,38 @@
+{
+  "lexicon": 1,
+  "id": "app.certified.group.register",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Register a group with the gPDS. Unauthenticated — proof of control is verified by logging into the group's PDS with the provided app password.",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["groupDid", "pdsUrl", "appPassword", "ownerDid"],
+          "properties": {
+            "groupDid": { "type": "string", "format": "did" },
+            "pdsUrl": { "type": "string", "format": "uri" },
+            "appPassword": { "type": "string" },
+            "ownerDid": { "type": "string", "format": "did" }
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["groupDid"],
+          "properties": {
+            "groupDid": { "type": "string", "format": "did" }
+          }
+        }
+      },
+      "errors": [
+        { "name": "InvalidRequest" },
+        { "name": "Unauthorized" },
+        { "name": "GroupAlreadyRegistered" }
+      ]
+    }
+  }
+}
