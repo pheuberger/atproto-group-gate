@@ -92,7 +92,9 @@ async function main() {
   const shutdown = async () => {
     logger.info('Shutting down...')
     clearInterval(nonceCleanupInterval)
-    server.close()
+    await new Promise<void>((resolve, reject) =>
+      server.close((err) => (err ? reject(err) : resolve()))
+    )
     await groupDbs.destroyAll()
     await globalDb.destroy()
     process.exit(0)
