@@ -33,23 +33,26 @@ export default function (app: Express, ctx: AppContext) {
       throw new ForbiddenError('Cannot promote above your own role')
     }
 
-    // Last-owner protection
-    if (target.role === 'owner' && newRole !== 'owner') {
-      const ownerCount = await groupDb
-        .selectFrom('group_members')
-        .where('role', '=', 'owner')
-        .select(groupDb.fn.countAll().as('count'))
-        .executeTakeFirstOrThrow()
-      if (Number(ownerCount.count) <= 1) {
-        throw new XRPCError(400, 'LastOwnerDemotion',
-          'Cannot demote the last owner — promote a replacement first')
+    // All updates run inside a transaction. For owner demotions the count check
+    // and UPDATE are atomic together, preventing TOCTOU races where two
+    // concurrent demotions both pass the guard.
+    await groupDb.transaction().execute(async (trx) => {
+      if (target.role === 'owner' && newRole !== 'owner') {
+        const ownerCount = await trx
+          .selectFrom('group_members')
+          .where('role', '=', 'owner')
+          .select(trx.fn.countAll().as('count'))
+          .executeTakeFirstOrThrow()
+        if (Number(ownerCount.count) <= 1) {
+          throw new XRPCError(400, 'LastOwnerDemotion',
+            'Cannot demote the last owner — promote a replacement first')
+        }
       }
-    }
-
-    await groupDb.updateTable('group_members')
-      .set({ role: newRole })
-      .where('member_did', '=', memberDid)
-      .execute()
+      await trx.updateTable('group_members')
+        .set({ role: newRole })
+        .where('member_did', '=', memberDid)
+        .execute()
+    })
 
     await ctx.audit.logAuditEvent(groupDb, callerDid, 'role.set', 'permitted', {
       memberDid, previousRole: target.role, newRole,
