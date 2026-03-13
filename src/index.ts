@@ -88,13 +88,22 @@ async function main() {
     logger.info({ port: config.port, groups: groups.length }, 'Group Service started')
   })
 
+  // Track open sockets so we can destroy idle keep-alive connections on shutdown
+  const openSockets = new Set<import('node:net').Socket>()
+  server.on('connection', (socket) => {
+    openSockets.add(socket)
+    socket.on('close', () => openSockets.delete(socket))
+  })
+
   // Graceful shutdown
   const shutdown = async () => {
     logger.info('Shutting down...')
     clearInterval(nonceCleanupInterval)
+    // Stop accepting new connections, then destroy any lingering keep-alive sockets
     await new Promise<void>((resolve, reject) =>
       server.close((err) => (err ? reject(err) : resolve()))
     )
+    openSockets.forEach((s) => s.destroy())
     await groupDbs.destroyAll()
     await globalDb.destroy()
     process.exit(0)
