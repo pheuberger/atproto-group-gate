@@ -2,6 +2,7 @@ import Database from 'better-sqlite3'
 import { Kysely, SqliteDialect } from 'kysely'
 import { join } from 'node:path'
 import { mkdirSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import type { GroupDatabase } from './schema.js'
 import { runGroupMigrations } from './migrate.js'
 
@@ -16,7 +17,7 @@ export class GroupDbPool {
     const existing = this.dbs.get(groupDid)
     if (existing) return existing
 
-    const safeName = groupDid.replace(/[^a-zA-Z0-9_]/g, '_')
+    const safeName = createHash('sha256').update(groupDid).digest('hex')
     const dbPath = join(this.dataDir, `${safeName}.sqlite`)
 
     const sqliteDb = new Database(dbPath)
