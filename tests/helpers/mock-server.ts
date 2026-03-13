@@ -3,7 +3,7 @@ import * as http from 'node:http'
 import type { Express } from 'express'
 import type { AppContext } from '../../src/context.js'
 import type { Config } from '../../src/config.js'
-import { assertCan, isAuthor } from '../../src/rbac/check.js'
+import { RbacChecker } from '../../src/rbac/check.js'
 import { AuditLogger } from '../../src/audit.js'
 import { xrpcErrorHandler } from '../../src/api/error-handler.js'
 import { createTestGlobalDb, createTestGroupDb } from './test-db.js'
@@ -70,7 +70,7 @@ export async function createTestContext(overrides?: Partial<AppContext>): Promis
     globalDb,
     groupDbs: mockGroupDbs as any,
     authVerifier: mockAuthVerifier as any,
-    rbac: { assertCan, isAuthor },
+    rbac: new RbacChecker(),
     pdsAgents: mockPdsAgents as any,
     audit: new AuditLogger(),
     logger: { info: () => {}, error: () => {}, warn: () => {}, debug: () => {} } as any,

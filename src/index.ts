@@ -7,7 +7,7 @@ import { mkdirSync } from 'node:fs'
 import { loadConfig } from './config.js'
 import { AuthVerifier } from './auth/verifier.js'
 import { NonceCache } from './auth/nonce.js'
-import { assertCan, isAuthor } from './rbac/check.js'
+import { RbacChecker } from './rbac/check.js'
 import { registerRoutes } from './api/index.js'
 import { xrpcErrorHandler } from './api/error-handler.js'
 import { runGlobalMigrations } from './db/migrate.js'
@@ -49,7 +49,7 @@ async function main() {
     60_000,
   )
   const authVerifier = new AuthVerifier(idResolver, nonceCache, globalDb)
-  const rbac = { assertCan, isAuthor }
+  const rbac = new RbacChecker()
 
   // Express app
   const app = express()
