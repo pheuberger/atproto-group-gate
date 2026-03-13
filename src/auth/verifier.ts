@@ -1,0 +1,75 @@
+import { IdResolver } from '@atproto/identity'
+import { AuthRequiredError, verifyJwt, parseReqNsid } from '@atproto/xrpc-server'
+import type { Kysely } from 'kysely'
+import type { Request } from 'express'
+import type { GlobalDatabase } from '../db/schema.js'
+import { NonceCache } from './nonce.js'
+
+const ACCEPTED_NSIDS = new Set([
+  'com.atproto.repo.createRecord',
+  'com.atproto.repo.deleteRecord',
+  'com.atproto.repo.putRecord',
+  'com.atproto.repo.uploadBlob',
+  'org.groupds.member.list',
+  'org.groupds.member.add',
+  'org.groupds.member.remove',
+  'org.groupds.role.set',
+  'org.groupds.audit.query',
+])
+
+export class AuthVerifier {
+  constructor(
+    private idResolver: IdResolver,
+    private nonceCache: NonceCache,
+    private globalDb: Kysely<GlobalDatabase>,
+  ) {}
+
+  async verify(req: Request): Promise<{ iss: string; aud: string }> {
+    const authHeader = req.headers.authorization
+    if (!authHeader?.startsWith('Bearer ')) {
+      throw new AuthRequiredError('Missing auth token')
+    }
+    const jwtStr = authHeader.slice(7)
+    const nsid = parseReqNsid(req)
+
+    if (!ACCEPTED_NSIDS.has(nsid)) {
+      throw new AuthRequiredError(`Unsupported NSID: ${nsid}`)
+    }
+
+    // verifyJwt checks: aud, lxm, exp, signature against DID doc.
+    // Pass null for aud — we check it ourselves because we support multiple groups.
+    const payload = await verifyJwt(
+      jwtStr,
+      null,
+      nsid,
+      async (did: string, forceRefresh: boolean): Promise<string> => {
+        const atprotoData = await this.idResolver.did.resolveAtprotoData(
+          did,
+          forceRefresh,
+        )
+        return atprotoData.signingKey
+      },
+    )
+
+    const group = payload.aud
+      ? await this.globalDb
+          .selectFrom('groups')
+          .where('did', '=', payload.aud)
+          .select('did')
+          .executeTakeFirst()
+      : undefined
+    if (!group) {
+      throw new AuthRequiredError('Invalid audience')
+    }
+
+    if (!payload.jti) {
+      throw new AuthRequiredError('Missing jti in service auth token')
+    }
+    const isNew = await this.nonceCache.checkAndStore(payload.jti)
+    if (!isNew) {
+      throw new AuthRequiredError('Replayed token')
+    }
+
+    return { iss: payload.iss, aud: payload.aud }
+  }
+}
