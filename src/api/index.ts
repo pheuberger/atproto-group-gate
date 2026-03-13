@@ -7,6 +7,7 @@ import createRecord from './repo/createRecord.js'
 import uploadBlob from './repo/uploadBlob.js'
 import auditQuery from './audit/query.js'
 import memberList from './member/list.js'
+import deleteRecord from './repo/deleteRecord.js'
 
 export function registerRoutes(app: Express, ctx: AppContext): void {
   // Each handler bead appends its import + registration call here.
@@ -18,4 +19,5 @@ export function registerRoutes(app: Express, ctx: AppContext): void {
   createRecord(app, ctx)
   uploadBlob(app, ctx)
   auditQuery(app, ctx)
+  deleteRecord(app, ctx)
 }
